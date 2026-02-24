@@ -40,4 +40,7 @@ public class Etudiant {
     private List<Enseignement> enseignements;
     */
 
+    public Etudiant() {
+    }
+
 }
