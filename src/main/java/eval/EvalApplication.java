@@ -1,4 +1,5 @@
 package eval;
+
 import org.h2.tools.Server;
 import org.modelmapper.ModelMapper;
 import org.springframework.boot.SpringApplication;
@@ -9,7 +10,6 @@ import jakarta.annotation.Nonnull;
 import org.springframework.lang.NonNull;
 
 import java.sql.SQLException;
-
 @SpringBootApplication
 public class EvalApplication {
 
@@ -17,4 +17,8 @@ public class EvalApplication {
         SpringApplication.run(EvalApplication.class, args);
     }
 
+    @Bean
+    ModelMapper modelMapper() {
+        return new ModelMapper();
+    }
 }
