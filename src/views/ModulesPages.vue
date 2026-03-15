@@ -20,6 +20,7 @@
 
       <div class="max-w-4xl ml-4 space-y-4">
         <div v-for="ue in filteredModules" :key="ue.id" 
+             @click="goToModule(ue.id)"
              class="bg-white p-5 rounded-[24px] border border-[#e4e0eb66] shadow-sm hover:shadow-md transition-all group cursor-pointer relative overflow-hidden flex flex-col justify-center min-h-[110px]">
           
           <div class="flex items-center justify-between">
@@ -61,22 +62,24 @@
 
 <script setup>
 import { computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import TheSidebar from '../components/TheSidebar.vue';
 import { Home, ChevronRight, BookText, Terminal, Code, Users2, Brain, BarChart3 } from 'lucide-vue-next';
 
 const route = useRoute();
+const router = useRouter(); // Initialize router for navigation
 const selectedSemester = computed(() => parseInt(route.params.id) || 5);
 
-// Base de données avec 4 modules par semestre et couleurs harmonisées
+// Navigation logic
+const goToModule = (id) => {
+  router.push({ name: 'ModuleEvaluation', params: { id: id } });
+};
+
 const allModules = [
-  // SEMESTRE 5
   { id: 1, semester: 5, code: 'UE501', title: 'Fondamentaux', description: 'Mathématiques et sciences de base', icon: BookText, validated: 1, total: 2 },
   { id: 2, semester: 5, code: 'UE502', title: 'Informatique', description: 'Développement logiciel et systèmes', icon: Terminal, validated: 1, total: 3 },
   { id: 3, semester: 5, code: 'UE503', title: 'Langues & Communication', description: 'Anglais technique et soft skills', icon: Brain, validated: 1, total: 2 },
   { id: 4, semester: 5, code: 'UE504', title: 'Management & Projet', description: 'Gestion de projet et méthodologies', icon: BarChart3, validated: 0, total: 2 },
-  
-  // SEMESTRE 6
   { id: 5, semester: 6, code: 'UE601', title: 'Génie Logiciel', description: 'Architecture et design patterns', icon: Code, validated: 0, total: 4 },
   { id: 6, semester: 6, code: 'UE602', title: 'Réseaux Avancés', description: 'Protocoles et sécurité', icon: Users2, validated: 2, total: 3 },
   { id: 7, semester: 6, code: 'UE603', title: 'Intelligence Artificielle', description: 'Machine Learning et Data Science', icon: Brain, validated: 0, total: 3 },
@@ -90,14 +93,9 @@ const filteredModules = computed(() => {
 
 <style scoped>
 .font-jakarta { font-family: 'Plus Jakarta Sans', sans-serif; }
-
-.group {
-  animation: slideUp 0.4s ease-out forwards;
-}
-
+.group { animation: slideUp 0.4s ease-out forwards; }
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(15px); }
   to { opacity: 1; transform: translateY(0); }
 }
 </style>
-000
