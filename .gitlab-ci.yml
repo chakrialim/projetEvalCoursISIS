@@ -1,0 +1,55 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: ""
+  IMAGE_TAG: "$CI_COMMIT_SHORT_SHA"
+  KUBE_NAMESPACE: "default"
+
+build-image:
+  stage: build
+  image: docker:24.0.5
+  services:
+    - name: docker:24.0.5-dind
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker build -t "$CI_REGISTRY_IMAGE:$IMAGE_TAG" .
+    - docker push "$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+    - |
+      if [ "$CI_COMMIT_BRANCH" = "$CI_DEFAULT_BRANCH" ]; then
+        docker tag "$CI_REGISTRY_IMAGE:$IMAGE_TAG" "$CI_REGISTRY_IMAGE:latest"
+        docker push "$CI_REGISTRY_IMAGE:latest"
+      fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH'
+
+deploy-kubernetes:
+  stage: deploy
+  image: bitnami/kubectl:1.32
+  needs:
+    - job: build-image
+  script:
+    - echo "$KUBECONFIG_B64" | base64 -d > kubeconfig
+    - export KUBECONFIG="$CI_PROJECT_DIR/kubeconfig"
+    - kubectl get namespace "$KUBE_NAMESPACE" >/dev/null 2>&1 || kubectl create namespace "$KUBE_NAMESPACE"
+    - |
+      kubectl -n "$KUBE_NAMESPACE" create secret generic isis-eval-secrets \
+        --from-literal=JDBC_URI="$JDBC_URI" \
+        --from-literal=JDBC_USER="$JDBC_USER" \
+        --from-literal=JDBC_PASSWORD="$JDBC_PASSWORD" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    - |
+      kubectl -n "$KUBE_NAMESPACE" create secret docker-registry gitlab-registry \
+        --docker-server="$CI_REGISTRY" \
+        --docker-username="$REGISTRY_USER" \
+        --docker-password="$REGISTRY_PASSWORD" \
+        --dry-run=client -o yaml | kubectl apply -f -
+    - kubectl apply -f k8s/configmap.yaml -n "$KUBE_NAMESPACE"
+    - kubectl apply -f k8s/service.yaml -n "$KUBE_NAMESPACE"
+    - kubectl apply -f k8s/deployment.yaml -n "$KUBE_NAMESPACE"
+    - kubectl -n "$KUBE_NAMESPACE" set image deployment/isis-eval isis-eval="$CI_REGISTRY_IMAGE:$IMAGE_TAG"
+    - kubectl -n "$KUBE_NAMESPACE" rollout status deployment/isis-eval --timeout=180s
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'

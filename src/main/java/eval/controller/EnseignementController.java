@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/enseignements")
+@RequestMapping("/api/enseignements")
 public class EnseignementController {
 
     private final EnseignementRepository enseignementRepository;
